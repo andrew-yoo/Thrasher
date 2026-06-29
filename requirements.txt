@@ -1,4 +1,0 @@
-argon2-cffi
-cryptography
-pycryptodome
-blake3
