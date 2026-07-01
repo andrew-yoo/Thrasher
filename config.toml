@@ -1,8 +1,0 @@
-title = "Configuration"
-
-[magic_number] 
-magic_number_string = "blwk"
-
-[version]
-semantic_version = "0.1.0"
-version_string = 1

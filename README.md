@@ -27,7 +27,7 @@ $ python main.py passwords.txt -d
 Flags:
 ```bash
 $ python main.py
-usage: main.py [-h] [-e] [-d] [-l] [-o] file_path
+usage: main.py [-h] [-e] [-d] [-o] file_path
 
 positional arguments:
   file_path       Enter the file path of the file to encrypt or decrypt.
@@ -36,7 +36,6 @@ options:
   -h, --help      show this help message and exit
   -e, --encrypt   Encrypt the file
   -d, --decrypt   Decrypt the file
-  -l, --light     Use light mode
   -o, --overkill  Use overkill mode
 ```
 
@@ -45,23 +44,13 @@ options:
 - Key Derivation
     - Argon2id
 - Encryption
-    - XChaCha20 for light and normal modes.
-    - XChaCha20, Camellia, and AES cascaded for overkill mode.
+    - AEGIS-256
+    - XChaCha20 cascaded with AEGIS-256 for overkill mode.
 - Authentication
-    - Keyed Blake3 (Encrypt-then-MAC)
+    - AEGIS-256
 
 ## .blwk File Structure
 
 | Field               | Byte Size | Byte Offset |
 | :------------------ | :-------- | :---------- |
 | Magic Number        | 4         | 0           |
-| Version             | 2         | 4           |
-| MAC                 | 32        | 6           |
-| Mode                | 1         | 38          |
-| Future Settings     | 1         | 39          |
-| More Future Space   | 8         | 40          |
-| Argon2 Salt         | 32        | 48          |
-| XChaCha20 Nonce     | 24        | 80          |
-| Camellia Nonce      | 16        | 104         |
-| AES Nonce           | 16        | 120         |
-| Ciphertext          |           | 136         |
