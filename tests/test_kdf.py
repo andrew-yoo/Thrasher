@@ -1,5 +1,4 @@
 import pytest
-from cryptography.exceptions import InvalidKey
 from bulwark import kdf
 from bulwark.shared import KDF
 
@@ -28,10 +27,10 @@ def test_verify():
     assert kdf.verify(over_obj) == None
 
     wrong_norm_obj = KDF(salt=SALT, overkill=False, password=WRONG_PASSWORD, key=NORMAL_KEY)
-    wrong_over_obj = KDF(salt=SALT, overkill=False, password=WRONG_PASSWORD, key=NORMAL_KEY)
+    wrong_over_obj = KDF(salt=SALT, overkill=True, password=WRONG_PASSWORD, key=OVERKILL_KEY)
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Keys do not match"):
         kdf.verify(wrong_norm_obj)
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Keys do not match"):
         kdf.verify(wrong_over_obj)
