@@ -1,2 +1,5 @@
 # Encrypted files
 *.blwk
+
+# Python
+__pycache__/

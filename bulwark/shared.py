@@ -5,6 +5,7 @@ class KDF:
         self.password = password
         self.key = key
 
+
 class Cipher:
     def __init__(self, nonce, key, overkill, plaintext=None, ciphertext=None):
         self.nonce = nonce

@@ -1,5 +1,5 @@
 from cryptography.hazmat.primitives.kdf.argon2 import Argon2id
-from shared import KDF
+from .shared import KDF
 
 NORMAL_SETTINGS = {
     "m": 1_048_576,
@@ -35,6 +35,7 @@ def derive(kdf_class):
             secret=None,
         )
     return kdf.derive(kdf_class.password)
+
 
 def verify(kdf_class):
     if kdf_class.overkill:
