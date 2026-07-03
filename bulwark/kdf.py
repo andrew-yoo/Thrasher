@@ -1,6 +1,7 @@
 from cryptography.hazmat.primitives.kdf.argon2 import Argon2id
 from nacl.hash import blake2b
-from .shared import KDF
+
+from .shared import Header
 
 NORMAL_SETTINGS = {
     "m": 1_048_576,
@@ -14,53 +15,55 @@ OVERKILL_SETTINGS = {
 }
 
 
-def derive_master(master_class):
-    if master_class.overkill:
-        kdf = Argon2id(
-            salt=master_class.salt,
-            length=32,
-            iterations=OVERKILL_SETTINGS["t"],
-            lanes=OVERKILL_SETTINGS["p"],
-            memory_cost=OVERKILL_SETTINGS["m"],
-            ad=None,
-            secret=None,
-        )
+def derive_master(kdf_class):
+    if kdf_class.mode == Header.OVERKILL:
+        settings = OVERKILL_SETTINGS
     else:
-        kdf = Argon2id(
-            salt=master_class.salt,
-            length=32,
-            iterations=NORMAL_SETTINGS["t"],
-            lanes=NORMAL_SETTINGS["p"],
-            memory_cost=NORMAL_SETTINGS["m"],
-            ad=None,
-            secret=None,
-        )
-    return kdf.derive(master_class.password)
+        settings = NORMAL_SETTINGS
+    kdf = Argon2id(
+        salt=kdf_class.salt,
+        length=64,
+        iterations=settings["t"],
+        lanes=settings["p"],
+        memory_cost=settings["m"],
+        ad=None,
+        secret=None,
+    )
+    return kdf.derive(kdf_class.password)
 
 
-def verify_master(master_class):
-    if master_class.overkill:
-        kdf = Argon2id(
-            salt=master_class.salt,
-            length=32,
-            iterations=OVERKILL_SETTINGS["t"],
-            lanes=OVERKILL_SETTINGS["p"],
-            memory_cost=OVERKILL_SETTINGS["m"],
-            ad=None,
-            secret=None,
-        )
+def verify_master(kdf_class):
+    if kdf_class.mode == Header.OVERKILL:
+        settings = OVERKILL_SETTINGS
     else:
-        kdf = Argon2id(
-            salt=master_class.salt,
-            length=32,
-            iterations=NORMAL_SETTINGS["t"],
-            lanes=NORMAL_SETTINGS["p"],
-            memory_cost=NORMAL_SETTINGS["m"],
-            ad=None,
-            secret=None,
-        )
-    return kdf.verify(master_class.password, master_class.key)
+        settings = NORMAL_SETTINGS
+    kdf = Argon2id(
+        salt=kdf_class.salt,
+        length=64,
+        iterations=settings["t"],
+        lanes=settings["p"],
+        memory_cost=settings["m"],
+        ad=None,
+        secret=None,
+    )
+    return kdf.verify(kdf_class.password, kdf_class.key)
 
 
-def derive_subkey(subkey_class, num):
-    return blake2b(subkey_class.key, 64, num, subkey_class.salt)
+def _blake2b(key, digest_size, person):
+    return bytes.fromhex(blake2b(person, digest_size, key).decode())
+
+
+def derive_aegis_key(master_key):
+    return _blake2b(master_key, 32, b"\x01")
+
+
+def derive_xchacha_key(master_key):
+    return _blake2b(master_key, 32, b"\x02")
+
+
+def derive_aegis_nonce(master_key):
+    return _blake2b(master_key, 32, b"\x03")
+
+
+def derive_xchacha_nonce(master_key):
+    return _blake2b(master_key, 24, b"\x04")

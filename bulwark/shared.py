@@ -2,18 +2,18 @@ import struct
 
 
 class KDF:
-    def __init__(self, salt=None, overkill=None, password=None, key=None):
+    def __init__(self, salt=None, mode=None, password=None, key=None):
         self.salt = salt
-        self.overkill = overkill
+        self.mode = mode
         self.password = password
         self.key = key
 
 
 class Cipher:
-    def __init__(self, nonce=None, key=None, overkill=None, ptext=None, ctext=None):
+    def __init__(self, nonce=None, key=None, mode=None, ptext=None, ctext=None):
         self.nonce = nonce
         self.key = key
-        self.overkill = overkill
+        self.mode = mode
         self.ptext = ptext
         self.ctext = ctext
 
