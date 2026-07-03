@@ -1,4 +1,5 @@
 from cryptography.hazmat.primitives.kdf.argon2 import Argon2id
+from nacl.hash import blake2b
 from .shared import KDF
 
 NORMAL_SETTINGS = {
@@ -13,10 +14,10 @@ OVERKILL_SETTINGS = {
 }
 
 
-def derive(kdf_class):
-    if kdf_class.overkill:
+def derive_master(master_class):
+    if master_class.overkill:
         kdf = Argon2id(
-            salt=kdf_class.salt,
+            salt=master_class.salt,
             length=32,
             iterations=OVERKILL_SETTINGS["t"],
             lanes=OVERKILL_SETTINGS["p"],
@@ -26,7 +27,7 @@ def derive(kdf_class):
         )
     else:
         kdf = Argon2id(
-            salt=kdf_class.salt,
+            salt=master_class.salt,
             length=32,
             iterations=NORMAL_SETTINGS["t"],
             lanes=NORMAL_SETTINGS["p"],
@@ -34,13 +35,13 @@ def derive(kdf_class):
             ad=None,
             secret=None,
         )
-    return kdf.derive(kdf_class.password)
+    return kdf.derive(master_class.password)
 
 
-def verify(kdf_class):
-    if kdf_class.overkill:
+def verify_master(master_class):
+    if master_class.overkill:
         kdf = Argon2id(
-            salt=kdf_class.salt,
+            salt=master_class.salt,
             length=32,
             iterations=OVERKILL_SETTINGS["t"],
             lanes=OVERKILL_SETTINGS["p"],
@@ -50,7 +51,7 @@ def verify(kdf_class):
         )
     else:
         kdf = Argon2id(
-            salt=kdf_class.salt,
+            salt=master_class.salt,
             length=32,
             iterations=NORMAL_SETTINGS["t"],
             lanes=NORMAL_SETTINGS["p"],
@@ -58,4 +59,8 @@ def verify(kdf_class):
             ad=None,
             secret=None,
         )
-    return kdf.verify(kdf_class.password, kdf_class.key)
+    return kdf.verify(master_class.password, master_class.key)
+
+
+def derive_subkey(subkey_class, num):
+    return blake2b(subkey_class.key, 64, num, subkey_class.salt)
