@@ -1,63 +1,64 @@
 import pytest
 from bulwark.encryption import encrypt, decrypt, verify
-from bulwark.shared import Cipher
+from bulwark.shared import Cipher, Header
 
 PT = b"hello world"
 
-AEGIS_KEY = bytes.fromhex("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-AEGIS_NONCE = bytes(32)
+NORMAL_AEGIS_KEY = bytes.fromhex("a5b487b76ddf05ab5e8aed28e1f4c913b37da8da772a538561359b2475f0dbd6")
+NORMAL_AEGIS_NONCE = bytes.fromhex("5f0a14b79fda1448e3cd159494e03c7422812f992c1926f6ecdb803cbfb7a7ff")
 
-XCHACHA_KEY = bytes.fromhex("fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210")
-XCHACHA_NONCE = bytes([9] * 24)
+OVERKILL_AEGIS_KEY = bytes.fromhex("b73f55456656c00a3227b2552a858b4363b7f912949760a1d5547b6191dcb460")
+OVERKILL_AEGIS_NONCE = bytes.fromhex("3b0d830a70537a9f34c74eb5876466bff46d4455b7e7128af80d829bfe8904e3")
+OVERKILL_XCHACHA_KEY = bytes.fromhex("d99528047109877af44996fa8a2b20a26e15be31facd8e6f4caceab57d17a77a")
+OVERKILL_XCHACHA_NONCE = bytes.fromhex("b7f6ccfa007509032258a7becce5e618f01b41cfc3a2ba0a")
 
-NORMAL_CT = bytes.fromhex("df78a5ce3cb31d32a43684e511f95c2a58770a926e4fcb5d3efd3b003ddcd87a29183dc4b913e01cf9a4dd")
-OVERKILL_CT = bytes.fromhex("0f061c3509bd3899e5308ef7b8f236012fe23432d301eedc2ab7cf0f94ca2f0970006a46661b7f664e586b2bddf125f9f3baa8947c198281224a25")
+NORMAL_CT = bytes.fromhex("a312334eb2fb864fe7b74c03c041a3063e71bf6d4651b5537d233a9f53000904eec1b6723b594ff452b3ca")
+OVERKILL_CT = bytes.fromhex("9144e00781054b65894dd491301d0994bbb1e495bc46161a923d7d189b8f4662ec2dbc4ef22838ac521ba9d8eb497af391725076e84ff9b31c005f")
 
 
 def test_normal_encrypt():
-    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ptext=PT)
+    cipher = Cipher(nonce=NORMAL_AEGIS_NONCE, key=NORMAL_AEGIS_KEY, mode=Header.NORMAL, ptext=PT)
     assert encrypt(cipher) == NORMAL_CT
 
 
 def test_normal_decrypt():
-    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ctext=NORMAL_CT)
+    cipher = Cipher(nonce=NORMAL_AEGIS_NONCE, key=NORMAL_AEGIS_KEY, mode=Header.NORMAL, ctext=NORMAL_CT)
     assert decrypt(cipher) == PT
 
 
 def test_overkill_encrypt():
-    aegis = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=True, ptext=PT)
-    xchacha = Cipher(nonce=XCHACHA_NONCE, key=XCHACHA_KEY, overkill=True, ptext=PT)
+    aegis = Cipher(nonce=OVERKILL_AEGIS_NONCE, key=OVERKILL_AEGIS_KEY, mode=Header.OVERKILL, ptext=PT)
+    xchacha = Cipher(nonce=OVERKILL_XCHACHA_NONCE, key=OVERKILL_XCHACHA_KEY, mode=Header.OVERKILL, ptext=PT)
     assert encrypt(aegis, xchacha) == OVERKILL_CT
 
 
 def test_overkill_decrypt():
-    aegis = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=True, ctext=OVERKILL_CT)
-    xchacha = Cipher(nonce=XCHACHA_NONCE, key=XCHACHA_KEY, overkill=True)
+    aegis = Cipher(nonce=OVERKILL_AEGIS_NONCE, key=OVERKILL_AEGIS_KEY, mode=Header.OVERKILL, ctext=OVERKILL_CT)
+    xchacha = Cipher(nonce=OVERKILL_XCHACHA_NONCE, key=OVERKILL_XCHACHA_KEY, mode=Header.OVERKILL)
     assert decrypt(aegis, xchacha) == PT
 
 
 def test_wrong_key_raises():
-    cipher = Cipher(nonce=AEGIS_NONCE, key=bytes(32), overkill=False, ctext=NORMAL_CT)
+    cipher = Cipher(nonce=NORMAL_AEGIS_NONCE, key=bytes(32), mode=Header.NORMAL, ctext=NORMAL_CT)
     with pytest.raises(Exception):
         decrypt(cipher)
 
 
 def test_tampered_ciphertext_raises():
-    # Flip a single bit in the ciphertext
     tampered = bytearray(NORMAL_CT)
     tampered[0] ^= 0x01
-    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ctext=bytes(tampered))
+    cipher = Cipher(nonce=NORMAL_AEGIS_NONCE, key=NORMAL_AEGIS_KEY, mode=Header.NORMAL, ctext=bytes(tampered))
     with pytest.raises(Exception):
         decrypt(cipher)
 
 
 def test_verify_valid():
-    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ctext=NORMAL_CT)
+    cipher = Cipher(nonce=NORMAL_AEGIS_NONCE, key=NORMAL_AEGIS_KEY, mode=Header.NORMAL, ctext=NORMAL_CT)
     verify(cipher)
 
 
 def test_verify_wrong_key():
-    cipher = Cipher(nonce=AEGIS_NONCE, key=bytes(32), overkill=False, ctext=NORMAL_CT)
+    cipher = Cipher(nonce=NORMAL_AEGIS_NONCE, key=bytes(32), mode=Header.NORMAL, ctext=NORMAL_CT)
     with pytest.raises(Exception):
         verify(cipher)
 
@@ -65,6 +66,6 @@ def test_verify_wrong_key():
 def test_verify_tampered():
     tampered = bytearray(NORMAL_CT)
     tampered[0] ^= 0x01
-    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ctext=bytes(tampered))
+    cipher = Cipher(nonce=NORMAL_AEGIS_NONCE, key=NORMAL_AEGIS_KEY, mode=Header.NORMAL, ctext=bytes(tampered))
     with pytest.raises(Exception):
         verify(cipher)
