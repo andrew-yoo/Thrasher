@@ -7,9 +7,9 @@ class KDF:
 
 
 class Cipher:
-    def __init__(self, nonce, key, overkill, plaintext=None, ciphertext=None):
+    def __init__(self, nonce, key, overkill, ptext=None, ctext=None):
         self.nonce = nonce
         self.key = key
         self.overkill = overkill
-        self.plaintext = plaintext
-        self.ciphertext = ciphertext
+        self.ptext = ptext
+        self.ctext = ctext
