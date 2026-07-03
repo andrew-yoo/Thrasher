@@ -2,11 +2,10 @@ import struct
 
 
 class KDF:
-    def __init__(self, salt=None, mode=None, password=None, key=None):
+    def __init__(self, salt=None, mode=None, password=None):
         self.salt = salt
         self.mode = mode
         self.password = password
-        self.key = key
 
 
 class Cipher:
