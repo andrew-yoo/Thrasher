@@ -32,23 +32,6 @@ def derive_master(kdf_class):
     return kdf.derive(kdf_class.password)
 
 
-def verify_master(kdf_class):
-    if kdf_class.mode == Header.OVERKILL:
-        settings = OVERKILL_SETTINGS
-    else:
-        settings = NORMAL_SETTINGS
-    kdf = Argon2id(
-        salt=kdf_class.salt,
-        length=64,
-        iterations=settings["t"],
-        lanes=settings["p"],
-        memory_cost=settings["m"],
-        ad=None,
-        secret=None,
-    )
-    return kdf.verify(kdf_class.password, kdf_class.key)
-
-
 def _blake2b(key, digest_size, person):
     return bytes.fromhex(blake2b(person, digest_size, key).decode())
 

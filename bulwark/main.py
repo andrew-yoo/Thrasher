@@ -11,14 +11,14 @@ from .kdf import (
     derive_xchacha_key,
     derive_xchacha_nonce,
 )
-from .shared import Cipher, Header
+from .shared import Cipher, Header, KDF
 
 
 def encrypt(path: str, password: bytes, mode: int, overwrite: bool = False) -> None:
     plaintext = read(path)
     salt = os.urandom(Header.SALT_SIZE)
 
-    master_key = derive_master(type("KDF", (), {"salt": salt, "mode": mode, "password": password})())
+    master_key = derive_master(KDF(salt=salt, mode=mode, password=password))
 
     aegis_key = derive_aegis_key(master_key)
     aegis_nonce = derive_aegis_nonce(master_key)
@@ -44,7 +44,7 @@ def decrypt(path: str, password: bytes, verify: bool = False, overwrite: bool = 
     header = Header.from_bytes(data[: Header.SIZE])
     ciphertext = data[Header.SIZE :]
 
-    master_key = derive_master(type("KDF", (), {"salt": header.salt, "mode": header.mode, "password": password})())
+    master_key = derive_master(KDF(salt=header.salt, mode=header.mode, password=password))
 
     aegis_key = derive_aegis_key(master_key)
     aegis_nonce = derive_aegis_nonce(master_key)

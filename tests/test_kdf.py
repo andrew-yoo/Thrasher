@@ -1,10 +1,8 @@
-import pytest
 from bulwark import kdf
 from bulwark.shared import Header, KDF
 
 SALT = b"0123456789abcdef0123456789abcdef"
 PASSWORD = b"password"
-WRONG_PASSWORD = b"wrong"
 
 NORMAL_MASTER_KEY = bytes.fromhex(
     "707d0a0a6e2489c5a6b9d2745af274b23e380176033fcfa8194913b08b1fa97268430a884e84a597f6105c089335aa18fe162b2880084df74996d6d39a78be53"
@@ -27,20 +25,6 @@ def test_derive_master():
     over_obj = KDF(salt=SALT, mode=Header.OVERKILL, password=PASSWORD)
     assert kdf.derive_master(norm_obj) == NORMAL_MASTER_KEY
     assert kdf.derive_master(over_obj) == OVERKILL_MASTER_KEY
-
-
-def test_verify_master():
-    norm_obj = KDF(salt=SALT, mode=Header.NORMAL, password=PASSWORD, key=NORMAL_MASTER_KEY)
-    over_obj = KDF(salt=SALT, mode=Header.OVERKILL, password=PASSWORD, key=OVERKILL_MASTER_KEY)
-    assert kdf.verify_master(norm_obj) is None
-    assert kdf.verify_master(over_obj) is None
-
-    wrong_norm = KDF(salt=SALT, mode=Header.NORMAL, password=WRONG_PASSWORD, key=NORMAL_MASTER_KEY)
-    wrong_over = KDF(salt=SALT, mode=Header.OVERKILL, password=WRONG_PASSWORD, key=OVERKILL_MASTER_KEY)
-    with pytest.raises(Exception, match="Keys do not match"):
-        kdf.verify_master(wrong_norm)
-    with pytest.raises(Exception, match="Keys do not match"):
-        kdf.verify_master(wrong_over)
 
 
 def test_derive_aegis_key():
