@@ -10,7 +10,7 @@ NORMAL_KEY = bytes.fromhex("24cd7d4013432dc68a04d5806ce387f9f8a42ae464f7c99b2da1
 OVERKILL_KEY = bytes.fromhex("22495d9083756044b2277e5619382b425be2d0fa92a1d5b47cb16d0c5ee97cee")
 
 
-def test_derive():
+def test_derive_master():
     norm_obj = KDF(salt=SALT, overkill=False, password=PASSWORD)
     over_obj = KDF(salt=SALT, overkill=True, password=PASSWORD)
 
@@ -19,7 +19,7 @@ def test_derive():
     assert kdf.derive(over_obj) == OVERKILL_KEY
 
 
-def test_verify():
+def test_verify_master():
     norm_obj = KDF(salt=SALT, overkill=False, password=PASSWORD, key=NORMAL_KEY)
     over_obj = KDF(salt=SALT, overkill=True, password=PASSWORD, key=OVERKILL_KEY)
 
