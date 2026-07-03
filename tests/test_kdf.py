@@ -15,22 +15,22 @@ def test_derive_master():
     over_obj = KDF(salt=SALT, overkill=True, password=PASSWORD)
 
     assert NORMAL_KEY != OVERKILL_KEY
-    assert kdf.derive(norm_obj) == NORMAL_KEY
-    assert kdf.derive(over_obj) == OVERKILL_KEY
+    assert kdf.derive_master(norm_obj) == NORMAL_KEY
+    assert kdf.derive_master(over_obj) == OVERKILL_KEY
 
 
 def test_verify_master():
     norm_obj = KDF(salt=SALT, overkill=False, password=PASSWORD, key=NORMAL_KEY)
     over_obj = KDF(salt=SALT, overkill=True, password=PASSWORD, key=OVERKILL_KEY)
 
-    assert kdf.verify(norm_obj) == None
-    assert kdf.verify(over_obj) == None
+    assert kdf.verify_master(norm_obj) == None
+    assert kdf.verify_master(over_obj) == None
 
     wrong_norm_obj = KDF(salt=SALT, overkill=False, password=WRONG_PASSWORD, key=NORMAL_KEY)
     wrong_over_obj = KDF(salt=SALT, overkill=True, password=WRONG_PASSWORD, key=OVERKILL_KEY)
 
     with pytest.raises(Exception, match="Keys do not match"):
-        kdf.verify(wrong_norm_obj)
+        kdf.verify_master(wrong_norm_obj)
 
     with pytest.raises(Exception, match="Keys do not match"):
-        kdf.verify(wrong_over_obj)
+        kdf.verify_master(wrong_over_obj)

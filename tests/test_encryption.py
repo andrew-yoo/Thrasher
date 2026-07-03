@@ -1,5 +1,5 @@
 import pytest
-from bulwark.encryption import encrypt, decrypt
+from bulwark.encryption import encrypt, decrypt, verify
 from bulwark.shared import Cipher
 
 PT = b"hello world"
@@ -49,3 +49,22 @@ def test_tampered_ciphertext_raises():
     cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ctext=bytes(tampered))
     with pytest.raises(Exception):
         decrypt(cipher)
+
+
+def test_verify_valid():
+    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ctext=NORMAL_CT)
+    verify(cipher)
+
+
+def test_verify_wrong_key():
+    cipher = Cipher(nonce=AEGIS_NONCE, key=bytes(32), overkill=False, ctext=NORMAL_CT)
+    with pytest.raises(Exception):
+        verify(cipher)
+
+
+def test_verify_tampered():
+    tampered = bytearray(NORMAL_CT)
+    tampered[0] ^= 0x01
+    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, overkill=False, ctext=bytes(tampered))
+    with pytest.raises(Exception):
+        verify(cipher)
