@@ -7,7 +7,7 @@ name = "thrasher"
 version = "0.2.0"
 description = "A lightweight file encryption program"
 readme = "README.md"
-license = {file = LICENSE}
+license = "AGPL-3.0-only"
 authors = [{name = "Andrew Yoo"}]
 requires-python = ">=3.12"
 dependencies = [
