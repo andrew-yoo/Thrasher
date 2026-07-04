@@ -1,5 +1,6 @@
 from cryptography.hazmat.primitives.kdf.argon2 import Argon2id
-from nacl.hash import blake2b
+import nacl.hash
+import nacl.encoding
 
 from .shared import Header
 
@@ -33,7 +34,7 @@ def derive_master(kdf_class):
 
 
 def _blake2b(key, digest_size, person):
-    return bytes.fromhex(blake2b(person, digest_size, key).decode())
+    return nacl.hash.blake2b(b"", digest_size, key, person=person, encoder=nacl.encoding.RawEncoder)
 
 
 def derive_aegis_key(master_key):
