@@ -18,13 +18,17 @@ def main():
     args = parser.parse_args()
 
     # fine for now, but getpass doesn't work on web assembly
-    password = getpass.getpass("Password: ").encode()
-
     try:
         if args.encrypt:
+            password = getpass.getpass("Password: ").encode()
+            password2 = getpass.getpass("Confirm: ").encode()
+            if password != password2:
+                print("Passwords do not match", file=sys.stderr)
+                sys.exit(1)
             mode = Header.OVERKILL if args.overkill else Header.NORMAL
             encrypt(args.file, password, mode, args.overwrite)
         else:
+            password = getpass.getpass("Password: ").encode()
             decrypt(args.file, password, args.verify, args.overwrite)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
