@@ -2,8 +2,8 @@ import argparse
 import getpass
 import sys
 
-from thrasher.main import encrypt, decrypt
-from thrasher.shared import Header
+from .main import encrypt, decrypt
+from .shared import Header
 
 
 def main():
