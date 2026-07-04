@@ -1,4 +1,4 @@
-# Internals
+# Crypto
 
 This is a living document.
 
@@ -15,7 +15,6 @@ This is a living document.
 - Confidentiality of plaintext data
 - Integrity of encrypted data and metadata
 - Resistance to offline cracking by a well-funded attacker
-    - Overkill mode: Nation-state attacker
 - Safe handling of plaintext during encryption and decryption
 
 ### Assumptions
@@ -40,9 +39,8 @@ This is a living document.
 
 ### Key Derivation
 
-Argon2id
+Argon2id and BLAKE2b
 
 ### Authenticated Encryption
 
-AEGIS-256
-(cascaded with XChaCha20) in Overkill mode.
+AEGIS-256 (cascaded with XChaCha20 in Overkill mode)
