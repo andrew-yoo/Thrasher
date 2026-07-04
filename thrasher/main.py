@@ -36,12 +36,12 @@ def encrypt(path: str, password: bytes, mode: int, overwrite: bool = False) -> N
         ciphertext = _encrypt(aegis)
 
     out = header.to_bytes() + ciphertext
-    out_path = path if overwrite else path + ".blwk"
+    out_path = path if overwrite else path + ".thrash"
     write(out_path, out)
 
 
 def decrypt(path: str, password: bytes, verify: bool = False, overwrite: bool = False) -> None:
-    if not path.endswith(".blwk"):
+    if not path.endswith(".thrash"):
         raise ValueError("Wrong extension")
 
     data = read(path)
@@ -67,5 +67,5 @@ def decrypt(path: str, password: bytes, verify: bool = False, overwrite: bool = 
 
     plaintext = _decrypt(aegis, xchacha)
 
-    out_path = path if overwrite else path.removesuffix(".blwk")
+    out_path = path if overwrite else path.removesuffix(".thrash")
     write(out_path, plaintext)

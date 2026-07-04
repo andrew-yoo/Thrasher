@@ -2,12 +2,12 @@ import argparse
 import getpass
 import sys
 
-from bulwark.main import encrypt, decrypt
-from bulwark.shared import Header
+from thrasher.main import encrypt, decrypt
+from thrasher.shared import Header
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Bulwark file encryption")
+    parser = argparse.ArgumentParser(description="Thrasher")
     parser.add_argument("file", help="file to encrypt or decrypt")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-e", "--encrypt", action="store_true", help="encrypt the file")
