@@ -1,6 +1,6 @@
 import os
 
-from bulwark.fileio import read, write
+from thrasher.fileio import read, write
 
 
 def test_write_and_read(tmp_path):

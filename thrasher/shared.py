@@ -19,7 +19,7 @@ class Cipher:
 
 
 class Header:
-    MAGIC = b"BLWK"
+    MAGIC = b"CODE"
     VERSION = 0x02
     SIZE = 38
     SALT_SIZE = 32

@@ -1,5 +1,5 @@
-from bulwark import kdf
-from bulwark.shared import Header, KDF
+from thrasher import kdf
+from thrasher.shared import Header, KDF
 
 SALT = b"0123456789abcdef0123456789abcdef"
 PASSWORD = b"password"

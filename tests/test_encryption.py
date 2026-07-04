@@ -1,6 +1,6 @@
 import pytest
-from bulwark.encryption import encrypt, decrypt, verify
-from bulwark.shared import Cipher, Header
+from thrasher.encryption import encrypt, decrypt, verify
+from thrasher.shared import Cipher, Header
 
 PT = b"hello world"
 

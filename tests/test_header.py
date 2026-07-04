@@ -1,5 +1,5 @@
 import pytest
-from bulwark.shared import Header
+from thrasher.shared import Header
 
 SALT = bytes(range(32))
 
@@ -14,11 +14,11 @@ def test_roundtrip():
 
 def test_from_bytes_errors():
     with pytest.raises(ValueError, match="Wrong header size"):
-        Header.from_bytes(b"BLWK\x01\x00")
+        Header.from_bytes(b"CODE\x01\x00")
     with pytest.raises(ValueError, match="Invalid magic"):
         Header.from_bytes(b"NOPE" + bytes(34))
     with pytest.raises(ValueError, match="Unsupported version"):
-        Header.from_bytes(b"BLWK" + bytes([0xFF, 0x00]) + bytes(32))
+        Header.from_bytes(b"CODE" + bytes([0xFF, 0x00]) + bytes(32))
 
 
 def test_init_errors():
