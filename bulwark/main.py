@@ -40,6 +40,9 @@ def encrypt(path: str, password: bytes, mode: int, overwrite: bool = False) -> N
 
 
 def decrypt(path: str, password: bytes, verify: bool = False, overwrite: bool = False) -> None:
+    if not path.endswith(".blwk"):
+        raise ValueError("Wrong extension")
+
     data = read(path)
     header = Header.from_bytes(data[: Header.SIZE])
     ciphertext = data[Header.SIZE :]
