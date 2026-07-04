@@ -9,12 +9,13 @@ class KDF:
 
 
 class Cipher:
-    def __init__(self, nonce=None, key=None, mode=None, ptext=None, ctext=None):
+    def __init__(self, nonce=None, key=None, mode=None, ptext=None, ctext=None, ad=None):
         self.nonce = nonce
         self.key = key
         self.mode = mode
         self.ptext = ptext
         self.ctext = ctext
+        self.ad = ad
 
 
 class Header:

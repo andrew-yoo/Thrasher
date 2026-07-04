@@ -24,7 +24,8 @@ def encrypt(path: str, password: bytes, mode: int, overwrite: bool = False) -> N
     aegis_nonce = derive_aegis_nonce(master_key)
 
     header = Header(mode=mode, salt=salt)
-    aegis = Cipher(nonce=aegis_nonce, key=aegis_key, mode=mode, ptext=plaintext)
+    header_bytes = header.to_bytes()
+    aegis = Cipher(nonce=aegis_nonce, key=aegis_key, mode=mode, ptext=plaintext, ad=header_bytes)
 
     if mode == Header.OVERKILL:
         xchacha_key = derive_xchacha_key(master_key)
@@ -44,14 +45,15 @@ def decrypt(path: str, password: bytes, verify: bool = False, overwrite: bool = 
         raise ValueError("Wrong extension")
 
     data = read(path)
-    header = Header.from_bytes(data[: Header.SIZE])
+    header_bytes = data[: Header.SIZE]
+    header = Header.from_bytes(header_bytes)
     ciphertext = data[Header.SIZE :]
 
     master_key = derive_master(KDF(salt=header.salt, mode=header.mode, password=password))
 
     aegis_key = derive_aegis_key(master_key)
     aegis_nonce = derive_aegis_nonce(master_key)
-    aegis = Cipher(nonce=aegis_nonce, key=aegis_key, mode=header.mode, ctext=ciphertext)
+    aegis = Cipher(nonce=aegis_nonce, key=aegis_key, mode=header.mode, ctext=ciphertext, ad=header_bytes)
 
     if header.mode == Header.OVERKILL:
         xchacha_key = derive_xchacha_key(master_key)
