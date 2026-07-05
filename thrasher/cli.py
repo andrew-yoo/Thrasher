@@ -21,10 +21,16 @@ def main():
     try:
         if args.encrypt:
             password = getpass.getpass("Password: ").encode()
+            
+            if password == b"":
+                print("Password field cannot be empty", file=sys.stderr)
+                sys.exit(1)
+
             password2 = getpass.getpass("Confirm: ").encode()
             if password != password2:
                 print("Passwords do not match", file=sys.stderr)
                 sys.exit(1)
+                
             mode = Header.OVERKILL if args.overkill else Header.NORMAL
             encrypt(args.file, password, mode, args.overwrite)
         else:
