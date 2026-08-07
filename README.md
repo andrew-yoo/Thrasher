@@ -11,5 +11,5 @@ pip install Thrasher
 ## Usage
 
 ```bash
-pip thrasher --help
+thrasher --help
 ```
