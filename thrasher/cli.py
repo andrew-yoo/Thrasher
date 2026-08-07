@@ -15,12 +15,7 @@ def main():
     # getpass doesn't work on web assembly
 
     try:
-        extension = str(args.file).split(".")[-1]
-    except:
-        extension = None
-
-    try:
-        if extension != "thrash":
+        if not args.file.endswith(".thrash"):
             password = getpass.getpass("Password: ").encode()
 
             if password == b"":
