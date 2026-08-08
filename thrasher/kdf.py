@@ -26,9 +26,13 @@ def _blake2b(key, digest_size, person):
     return nacl.hash.blake2b(b"", digest_size, key, person=person, encoder=nacl.encoding.RawEncoder)
 
 
+def _person(value: int) -> bytes:
+    return value.to_bytes(16, "big")
+
+
 def derive_aegis_key(master_key):
-    return _blake2b(master_key, 32, b"\x01")
+    return _blake2b(master_key, 32, _person(0))
 
 
-def derive_aegis_nonce(master_key):
-    return _blake2b(master_key, 32, b"\x03")
+def derive_chunk_nonce(master_key, index: int) -> bytes:
+    return _blake2b(master_key, 32, _person(index + 1))

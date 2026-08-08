@@ -8,11 +8,8 @@ from .main import encrypt, decrypt
 def main():
     parser = argparse.ArgumentParser(description="Thrasher")
     parser.add_argument("file", help="file to encrypt or decrypt")
-    parser.add_argument("-v", "--verify", action="store_true", help="verify before decrypting")
     parser.add_argument("-w", "--overwrite", action="store_true", help="overwrite the input file")
     args = parser.parse_args()
-
-    # getpass doesn't work on web assembly
 
     try:
         if not args.file.endswith(".thrash"):
@@ -31,7 +28,7 @@ def main():
 
         else:
             password = getpass.getpass("Password: ").encode()
-            decrypt(args.file, password, args.verify, args.overwrite)
+            decrypt(args.file, password, args.overwrite)
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

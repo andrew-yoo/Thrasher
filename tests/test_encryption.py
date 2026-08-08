@@ -1,5 +1,5 @@
 import pytest
-from thrasher.encryption import encrypt, decrypt, verify
+from thrasher.encryption import encrypt, decrypt
 from thrasher.shared import Cipher
 
 PT = b"hello world"
@@ -20,6 +20,14 @@ def test_decrypt():
     assert decrypt(cipher) == PT
 
 
+def test_empty_plaintext_roundtrip():
+    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, ptext=b"")
+    ct = encrypt(cipher)
+    assert len(ct) == 32
+    out = decrypt(Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, ctext=ct))
+    assert out == b""
+
+
 def test_wrong_key_raises():
     cipher = Cipher(nonce=AEGIS_NONCE, key=bytes(32), ctext=CT)
     with pytest.raises(Exception):
@@ -32,22 +40,3 @@ def test_tampered_ciphertext_raises():
     cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, ctext=bytes(tampered))
     with pytest.raises(Exception):
         decrypt(cipher)
-
-
-def test_verify_valid():
-    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, ctext=CT)
-    verify(cipher)
-
-
-def test_verify_wrong_key():
-    cipher = Cipher(nonce=AEGIS_NONCE, key=bytes(32), ctext=CT)
-    with pytest.raises(Exception):
-        verify(cipher)
-
-
-def test_verify_tampered():
-    tampered = bytearray(CT)
-    tampered[0] ^= 0x01
-    cipher = Cipher(nonce=AEGIS_NONCE, key=AEGIS_KEY, ctext=bytes(tampered))
-    with pytest.raises(Exception):
-        verify(cipher)
