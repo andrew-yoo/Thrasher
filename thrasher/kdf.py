@@ -12,7 +12,7 @@ SETTINGS = {
 def derive_master(kdf_class):
     kdf = Argon2id(
         salt=kdf_class.salt,
-        length=64,
+        length=32,
         iterations=SETTINGS["t"],
         lanes=SETTINGS["p"],
         memory_cost=SETTINGS["m"],
