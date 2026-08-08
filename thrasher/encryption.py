@@ -6,10 +6,6 @@ def encrypt(aegis_class):
     return aegis_class.ctext
 
 
-def verify(aegis_class):
-    crypto_aead_aegis256_decrypt(aegis_class.ctext, aegis_class.ad, aegis_class.nonce, aegis_class.key)
-
-
 def decrypt(aegis_class):
     aegis_class.ptext = crypto_aead_aegis256_decrypt(aegis_class.ctext, aegis_class.ad, aegis_class.nonce, aegis_class.key)
     return aegis_class.ptext

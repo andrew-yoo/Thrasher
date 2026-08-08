@@ -1,52 +1,65 @@
 import os
 
 from .encryption import decrypt as _decrypt
-from .encryption import verify as _verify
 from .encryption import encrypt as _encrypt
-from .fileio import read, write
-from .kdf import derive_aegis_key, derive_aegis_nonce, derive_master
+from .fileio import atomic_write, read_chunks, read_exact
+from .kdf import derive_aegis_key, derive_chunk_nonce, derive_master
 from .shared import Cipher, Header, KDF
 
 
+def _record_count(length: int) -> int:
+    return max(1, (length + Header.CHUNK_SIZE - 1) // Header.CHUNK_SIZE)
+
+
 def encrypt(path: str, password: bytes, overwrite: bool = False) -> None:
-    plaintext = read(path)
+    plaintext_size = os.path.getsize(path)
     salt = os.urandom(Header.SALT_SIZE)
 
     master_key = derive_master(KDF(salt=salt, password=password))
-
     aegis_key = derive_aegis_key(master_key)
-    aegis_nonce = derive_aegis_nonce(master_key)
 
-    header = Header(salt=salt)
+    header = Header(salt=salt, length=plaintext_size)
     header_bytes = header.to_bytes()
-    aegis = Cipher(nonce=aegis_nonce, key=aegis_key, ptext=plaintext, ad=header_bytes)
 
-    ciphertext = _encrypt(aegis)
-
-    out = header.to_bytes() + ciphertext
+    chunks = read_chunks(path, Header.CHUNK_SIZE)
     out_path = path if overwrite else path + ".thrash"
-    write(out_path, out)
+    with atomic_write(out_path) as out:
+        out.write(header_bytes)
+        for i in range(_record_count(plaintext_size)):
+            chunk = next(chunks, b"")
+            nonce = derive_chunk_nonce(master_key, i)
+            cipher = Cipher(nonce=nonce, key=aegis_key, ptext=chunk, ad=header_bytes if i == 0 else b"")
+            out.write(_encrypt(cipher))
 
 
-def decrypt(path: str, password: bytes, verify: bool = False, overwrite: bool = False) -> None:
+def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
     if not path.endswith(".thrash"):
         raise ValueError("Wrong extension")
 
-    data = read(path)
-    header_bytes = data[: Header.SIZE]
-    header = Header.from_bytes(header_bytes)
-    ciphertext = data[Header.SIZE :]
+    file_size = os.path.getsize(path)
+    with open(path, "rb") as f:
+        header_bytes = read_exact(f, Header.SIZE)
+        header = Header.from_bytes(header_bytes)
 
-    master_key = derive_master(KDF(salt=header.salt, password=password))
+        records = _record_count(header.length)
+        if file_size != Header.SIZE + header.length + records * 32:
+            raise ValueError("Corrupt file: unexpected size")
 
-    aegis_key = derive_aegis_key(master_key)
-    aegis_nonce = derive_aegis_nonce(master_key)
-    aegis = Cipher(nonce=aegis_nonce, key=aegis_key, ctext=ciphertext, ad=header_bytes)
+        master_key = derive_master(KDF(salt=header.salt, password=password))
+        aegis_key = derive_aegis_key(master_key)
 
-    if verify:
-        _verify(aegis)
+        out_path = path if overwrite else path.removesuffix(".thrash")
+        with atomic_write(out_path) as out:
+            recovered = 0
+            for i in range(records):
+                remaining = header.length - recovered
+                chunk_len = min(Header.CHUNK_SIZE, remaining) if remaining > 0 else 0
+                record = read_exact(f, chunk_len + 32)
+                nonce = derive_chunk_nonce(master_key, i)
+                cipher = Cipher(nonce=nonce, key=aegis_key, ctext=record, ad=header_bytes if i == 0 else b"")
+                plaintext = _decrypt(cipher)
+                out.write(plaintext)
+                recovered += len(plaintext)
 
-    plaintext = _decrypt(aegis)
-
-    out_path = path if overwrite else path.removesuffix(".thrash")
-    write(out_path, plaintext)
+            if f.read(1) != b"":
+                raise ValueError("Corrupt file: trailing data")

@@ -1,8 +1,40 @@
-def write(path: str, data: bytes) -> None:
-    with open(path, "wb") as f:
-        f.write(data)
+import os
+import tempfile
 
 
-def read(path: str) -> bytes:
+def read_chunks(path: str, size: int):
     with open(path, "rb") as f:
-        return f.read()
+        while True:
+            data = f.read(size)
+            if not data:
+                break
+            yield data
+
+
+def read_exact(f, size: int) -> bytes:
+    data = f.read(size)
+    if len(data) != size:
+        raise EOFError("Unexpected end of file")
+    return data
+
+
+class atomic_write:
+    def __init__(self, path: str) -> None:
+        self.path = path
+        directory = os.path.dirname(os.path.abspath(path))
+        fd, self.tmp_path = tempfile.mkstemp(prefix=".thrasher-", dir=directory)
+        self.file = os.fdopen(fd, "wb")
+
+    def __enter__(self):
+        return self.file
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            self.file.flush()
+            os.fsync(self.file.fileno())
+            self.file.close()
+            os.replace(self.tmp_path, self.path)
+        else:
+            self.file.close()
+            os.unlink(self.tmp_path)
+        return False

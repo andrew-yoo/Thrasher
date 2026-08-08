@@ -5,12 +5,24 @@ A lightweight file encryption program written in Python.
 ## Installation
 
 ```bash
-pip install Thrasher
+pip install thrasher
 ```
 
 ## Usage
 
 ```bash
+pip install thrasher
+
+# Encrypt a file
+thrasher secret.txt
+
+# Decrypt a file
+thrasher secret.txt.thrash
+
+# Overwrite on decryption
+thrasher -w secret.txt.thrash
+
+# Help
 thrasher --help
 ```
 
