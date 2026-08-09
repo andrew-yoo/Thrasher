@@ -12,9 +12,12 @@ def read_chunks(path: str, size: int):
 
 
 def read_exact(f, size: int) -> bytes:
-    data = f.read(size)
-    if len(data) != size:
-        raise EOFError("Unexpected end of file")
+    data = b""
+    while len(data) < size:
+        chunk = f.read(size - len(data))
+        if not chunk:
+            raise EOFError("Unexpected end of file")
+        data += chunk
     return data
 
 
