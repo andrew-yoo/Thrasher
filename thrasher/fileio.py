@@ -1,5 +1,8 @@
+import errno
 import os
 import tempfile
+
+_FSYNC_UNSUPPORTED = {errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP, errno.EBADF, errno.EROFS}
 
 
 def read_chunks(path: str, size: int):
@@ -42,6 +45,11 @@ class atomic_write:
             else:
                 self.file.close()
         finally:
+            if not self.file.closed:
+                try:
+                    self.file.close()
+                except OSError:
+                    pass  # never mask the original error
             if os.path.exists(self.tmp_path):
                 try:
                     os.unlink(self.tmp_path)
@@ -50,11 +58,12 @@ class atomic_write:
         return False
 
     def _fsync_dir(self):
+        fd = os.open(self.directory, os.O_RDONLY)
         try:
-            fd = os.open(self.directory, os.O_RDONLY)
             try:
                 os.fsync(fd)
-            finally:
-                os.close(fd)
-        except OSError:
-            pass  # dir fsync unsupported on some platforms
+            except OSError as e:
+                if e.errno not in _FSYNC_UNSUPPORTED:
+                    raise
+        finally:
+            os.close(fd)

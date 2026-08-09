@@ -1,3 +1,4 @@
+import errno
 import os
 import pytest
 
@@ -42,6 +43,56 @@ def test_atomic_write_commits(tmp_path):
     assert os.path.exists(target)
     with open(target, "rb") as f:
         assert f.read() == b"data"
+
+
+def test_atomic_write_closes_file_on_fsync_failure(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def fail_fsync(fd):
+        raise OSError("fsync failed")
+
+    monkeypatch.setattr("thrasher.fileio.os.fsync", fail_fsync)
+    aw = atomic_write(target)
+    with pytest.raises(OSError):
+        with aw:
+            aw.file.write(b"data")
+    assert aw.file.closed
+    assert not os.path.exists(target)
+    assert [p for p in os.listdir(tmp_path) if p.startswith(".thrasher-")] == []
+
+
+def test_fsync_dir_propagates_open_error(tmp_path, monkeypatch):
+    aw = atomic_write(str(tmp_path / "out.bin"))
+
+    def fail_open(*a, **k):
+        raise OSError(errno.EACCES, "Permission denied")
+
+    monkeypatch.setattr("thrasher.fileio.os.open", fail_open)
+    with pytest.raises(OSError) as e:
+        aw._fsync_dir()
+    assert e.value.errno == errno.EACCES
+
+
+def test_fsync_dir_ignores_unsupported(tmp_path, monkeypatch):
+    aw = atomic_write(str(tmp_path / "out.bin"))
+
+    def unsupported(fd):
+        raise OSError(errno.EINVAL, "Invalid argument")
+
+    monkeypatch.setattr("thrasher.fileio.os.fsync", unsupported)
+    aw._fsync_dir()  # must not raise
+
+
+def test_fsync_dir_propagates_real_error(tmp_path, monkeypatch):
+    aw = atomic_write(str(tmp_path / "out.bin"))
+
+    def io_error(fd):
+        raise OSError(errno.EIO, "I/O error")
+
+    monkeypatch.setattr("thrasher.fileio.os.fsync", io_error)
+    with pytest.raises(OSError) as e:
+        aw._fsync_dir()
+    assert e.value.errno == errno.EIO
 
 
 def test_atomic_write_cleans_on_replace_failure(tmp_path, monkeypatch):
