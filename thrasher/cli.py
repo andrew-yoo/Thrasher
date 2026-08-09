@@ -28,7 +28,7 @@ def main():
                 print("Passwords do not match", file=sys.stderr)
                 sys.exit(1)
 
-            encrypt(args.file, password, args.overwrite)
+            encrypt(args.file, password)
 
         else:
             password = getpass.getpass("Password: ").encode()
