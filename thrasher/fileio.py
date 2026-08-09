@@ -1,5 +1,6 @@
 import errno
 import os
+import sys
 import tempfile
 
 _FSYNC_UNSUPPORTED = {errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP, errno.EBADF, errno.EROFS}
@@ -58,6 +59,8 @@ class atomic_write:
         return False
 
     def _fsync_dir(self):
+        if sys.platform == "win32":
+            return
         fd = os.open(self.directory, os.O_RDONLY)
         try:
             try:
