@@ -44,6 +44,19 @@ def test_atomic_write_commits(tmp_path):
         assert f.read() == b"data"
 
 
+def test_atomic_write_cleans_on_replace_failure(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def boom(src, dst):
+        raise OSError("nope")
+
+    monkeypatch.setattr("thrasher.fileio.os.replace", boom)
+    with pytest.raises(OSError):
+        with atomic_write(target) as f:
+            f.write(b"data")
+    assert [p for p in os.listdir(tmp_path) if p.startswith(".thrasher-")] == []
+
+
 def test_atomic_write_cleans_on_error(tmp_path):
     target = str(tmp_path / "out.bin")
     with pytest.raises(RuntimeError):
