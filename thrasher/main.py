@@ -11,7 +11,7 @@ def _record_count(length: int) -> int:
     return max(1, (length + Header.CHUNK_SIZE - 1) // Header.CHUNK_SIZE)
 
 
-def encrypt(path: str, password: bytes, overwrite: bool = False) -> None:
+def encrypt(path: str, password: bytes) -> None:
     plaintext_size = os.path.getsize(path)
     salt = os.urandom(Header.SALT_SIZE)
 
@@ -22,7 +22,7 @@ def encrypt(path: str, password: bytes, overwrite: bool = False) -> None:
     header_bytes = header.to_bytes()
 
     chunks = read_chunks(path, Header.CHUNK_SIZE)
-    out_path = path if overwrite else path + ".thrash"
+    out_path = path + ".thrash"
     with atomic_write(out_path) as out:
         out.write(header_bytes)
         for i in range(_record_count(plaintext_size)):
