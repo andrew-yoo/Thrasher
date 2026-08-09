@@ -19,7 +19,7 @@ def main():
 
             password = getpass.getpass("Password: ").encode()
 
-            if password == b"":
+            if not password:
                 print("Password field cannot be empty", file=sys.stderr)
                 sys.exit(1)
 
@@ -32,6 +32,11 @@ def main():
 
         else:
             password = getpass.getpass("Password: ").encode()
+
+            if not password:
+                print("Password field cannot be empty", file=sys.stderr)
+                sys.exit(1)
+
             decrypt(args.file, password, args.overwrite)
 
     except Exception as e:
