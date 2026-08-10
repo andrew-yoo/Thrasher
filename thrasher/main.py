@@ -3,7 +3,7 @@ import os
 from .encryption import decrypt as _decrypt
 from .encryption import encrypt as _encrypt
 from .fileio import atomic_write, read_chunks, read_exact
-from .kdf import derive_master
+from .kdf import derive_key
 from .shared import Cipher, Header, KDF
 
 
@@ -19,7 +19,7 @@ def encrypt(path: str, password: bytes) -> None:
     plaintext_size = os.path.getsize(path)
     salt = os.urandom(Header.SALT_SIZE)
 
-    master_key = derive_master(KDF(salt=salt, password=password))
+    key = derive_key(KDF(salt=salt, password=password))
 
     header = Header(salt=salt, length=plaintext_size)
     header_bytes = header.to_bytes()
@@ -31,7 +31,7 @@ def encrypt(path: str, password: bytes) -> None:
         for i in range(_record_count(plaintext_size)):
             chunk = next(chunks, b"")
             nonce = chunk_nonce(i)
-            cipher = Cipher(nonce=nonce, key=master_key, ptext=chunk, ad=header_bytes if i == 0 else b"")
+            cipher = Cipher(nonce=nonce, key=key, ptext=chunk, ad=header_bytes if i == 0 else b"")
             out.write(_encrypt(cipher))
 
 
@@ -48,7 +48,7 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
         if file_size != Header.SIZE + header.length + records * 32:
             raise ValueError("Corrupt file: unexpected size")
 
-        master_key = derive_master(KDF(salt=header.salt, password=password))
+        key = derive_key(KDF(salt=header.salt, password=password))
 
         out_path = path if overwrite else path.removesuffix(".thrash")
         with atomic_write(out_path) as out:
@@ -58,7 +58,7 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
                 chunk_len = min(Header.CHUNK_SIZE, remaining) if remaining > 0 else 0
                 record = read_exact(f, chunk_len + 32)
                 nonce = chunk_nonce(i)
-                cipher = Cipher(nonce=nonce, key=master_key, ctext=record, ad=header_bytes if i == 0 else b"")
+                cipher = Cipher(nonce=nonce, key=key, ctext=record, ad=header_bytes if i == 0 else b"")
                 plaintext = _decrypt(cipher)
                 out.write(plaintext)
                 recovered += len(plaintext)
