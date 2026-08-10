@@ -1,7 +1,7 @@
 import pytest
 
 from thrasher import kdf as kdf_module
-from thrasher.main import decrypt, encrypt
+from thrasher.main import chunk_nonce, decrypt, encrypt
 from thrasher.shared import Header
 
 PASSWORD = b"pw"
@@ -16,6 +16,14 @@ def fast_kdf(monkeypatch):
 
 def data(n):
     return bytes(range(256)) * (n // 256) + bytes(range(n % 256))
+
+
+def test_chunk_nonce():
+    assert len(chunk_nonce(0)) == 32
+    assert chunk_nonce(0) == b"\x00" * 8 + b"\x00" * 24
+    assert chunk_nonce(5)[:8] == (5).to_bytes(8, "big")
+    assert chunk_nonce(5)[8:] == bytes(24)
+    assert len({chunk_nonce(i) for i in range(1024)}) == 1024
 
 
 def encrypt_to(tmp_path, size):
