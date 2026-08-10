@@ -7,7 +7,7 @@ SETTINGS = {
 }
 
 
-def derive_master(kdf_class):
+def derive_key(kdf_class):
     kdf = Argon2id(
         salt=kdf_class.salt,
         length=32,
