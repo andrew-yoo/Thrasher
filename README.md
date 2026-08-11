@@ -1,5 +1,8 @@
 # Thrasher
 
+![PyPI License](https://img.shields.io/pypi/l/thrasher)
+![PyPI Version](https://img.shields.io/pypi/v/thrasher?logoColor=green&color=light%20green)
+
 A lightweight file encryption program written in Python.
 
 ## Installation
