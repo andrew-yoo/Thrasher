@@ -18,7 +18,7 @@ class Cipher:
 
 class Header:
     MAGIC = b"CODE"
-    VERSION = 0x04
+    VERSION = 0x03
     SIZE = 45
     SALT_SIZE = 32
     CHUNK_SIZE = 1_048_576

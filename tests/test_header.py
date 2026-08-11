@@ -14,7 +14,7 @@ def test_roundtrip():
 
 def test_from_bytes_errors():
     with pytest.raises(ValueError, match="Wrong header size"):
-        Header.from_bytes(b"CODE\x04" + bytes(39))
+        Header.from_bytes(b"CODE\x03" + bytes(39))
     with pytest.raises(ValueError, match="Invalid magic"):
         Header.from_bytes(b"NOPE" + bytes(41))
     with pytest.raises(ValueError, match="Unsupported version"):
