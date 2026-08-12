@@ -18,6 +18,7 @@ def test_encrypt_decrypt_roundtrip(tmp_path, monkeypatch):
     run_cli(monkeypatch, [str(src)], ["pw", "pw"])
     enc = tmp_path / "secret.txt.thrash"
     assert enc.exists()
+    src.unlink()
     run_cli(monkeypatch, ["-w", str(enc)], ["pw"])
     assert (tmp_path / "secret.txt").read_bytes() == b"hello world"
 

@@ -36,6 +36,7 @@ def encrypt_to(tmp_path, size):
 @pytest.mark.parametrize("size", [0, 1, 12345, CHUNK, CHUNK + 1, 2 * CHUNK, 3 * CHUNK + 777])
 def test_roundtrip(tmp_path, size):
     enc = encrypt_to(tmp_path, size)
+    (tmp_path / "in.bin").unlink()
     decrypt(enc, PASSWORD, overwrite=True)
     assert open(str(tmp_path / "in.bin"), "rb").read() == data(size)
 
