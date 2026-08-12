@@ -15,7 +15,7 @@ def _record_count(length: int) -> int:
     return max(1, (length + Header.CHUNK_SIZE - 1) // Header.CHUNK_SIZE)
 
 
-def encrypt(path: str, password: bytes) -> None:
+def encrypt(path: str, password: bytes, overwrite: bool = False) -> None:
     plaintext_size = os.path.getsize(path)
     salt = os.urandom(Header.SALT_SIZE)
 
@@ -26,6 +26,8 @@ def encrypt(path: str, password: bytes) -> None:
 
     chunks = read_chunks(path, Header.CHUNK_SIZE)
     out_path = path + ".thrash"
+    if os.path.exists(out_path) and not overwrite:
+        raise FileExistsError(f"A file at {out_path} already exists but can be overwritten with -w")
     with atomic_write(out_path) as out:
         out.write(header_bytes)
         for i in range(_record_count(plaintext_size)):
@@ -50,7 +52,9 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
 
         key = derive_key(KDF(salt=header.salt, password=password))
 
-        out_path = path if overwrite else path.removesuffix(".thrash")
+        out_path = path.removesuffix(".thrash")
+        if not out_path or (os.path.exists(out_path) and not overwrite):
+            raise FileExistsError(f"{out_path} already exists; use -w/--overwrite to overwrite")
         with atomic_write(out_path) as out:
             recovered = 0
             for i in range(records):
@@ -65,3 +69,4 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
 
             if f.read(1) != b"":
                 raise ValueError("Corrupt file: trailing data")
+            f.close()
