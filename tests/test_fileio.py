@@ -45,6 +45,24 @@ def test_atomic_write_commits(tmp_path):
         assert f.read() == b"data"
 
 
+def test_atomic_write_no_overwrite_refuses_existing(tmp_path):
+    target = str(tmp_path / "out.bin")
+    with open(target, "wb") as f:
+        f.write(b"original")
+    with pytest.raises(FileExistsError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"replacement")
+    assert open(target, "rb").read() == b"original"
+    assert [p for p in os.listdir(tmp_path) if p.startswith(".thrasher-")] == []
+
+
+def test_atomic_write_no_overwrite_commits_when_absent(tmp_path):
+    target = str(tmp_path / "out.bin")
+    with atomic_write(target, overwrite=False) as f:
+        f.write(b"data")
+    assert open(target, "rb").read() == b"data"
+
+
 def test_atomic_write_closes_file_on_fsync_failure(tmp_path, monkeypatch):
     target = str(tmp_path / "out.bin")
 

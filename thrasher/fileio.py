@@ -26,8 +26,9 @@ def read_exact(f, size: int) -> bytes:
 
 
 class atomic_write:
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, overwrite: bool = True) -> None:
         self.path = path
+        self.overwrite = overwrite
         self.directory = os.path.dirname(os.path.abspath(path))
         fd, self.tmp_path = tempfile.mkstemp(prefix=".thrasher-", dir=self.directory)
         self.file = os.fdopen(fd, "wb")
@@ -41,7 +42,11 @@ class atomic_write:
                 self.file.flush()
                 os.fsync(self.file.fileno())
                 self.file.close()
-                os.replace(self.tmp_path, self.path)
+                if self.overwrite:
+                    os.replace(self.tmp_path, self.path)
+                else:
+                    os.link(self.tmp_path, self.path)
+                    os.unlink(self.tmp_path)
                 self._fsync_dir()
             else:
                 self.file.close()

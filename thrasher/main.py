@@ -28,7 +28,7 @@ def encrypt(path: str, password: bytes, overwrite: bool = False) -> None:
     out_path = path + ".thrash"
     if os.path.exists(out_path) and not overwrite:
         raise FileExistsError(f"A file at {out_path} already exists but can be overwritten with -w")
-    with atomic_write(out_path) as out:
+    with atomic_write(out_path, overwrite=overwrite) as out:
         out.write(header_bytes)
         for i in range(_record_count(plaintext_size)):
             chunk = next(chunks, b"")
@@ -55,7 +55,7 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
         out_path = path.removesuffix(".thrash")
         if not out_path or (os.path.exists(out_path) and not overwrite):
             raise FileExistsError(f"{out_path} already exists; use -w/--overwrite to overwrite")
-        with atomic_write(out_path) as out:
+        with atomic_write(out_path, overwrite=overwrite) as out:
             recovered = 0
             for i in range(records):
                 remaining = header.length - recovered
