@@ -37,7 +37,7 @@ def encrypt_to(tmp_path, size):
 def test_roundtrip(tmp_path, size):
     enc = encrypt_to(tmp_path, size)
     decrypt(enc, PASSWORD, overwrite=True)
-    assert open(enc, "rb").read() == data(size)
+    assert open(str(tmp_path / "in.bin"), "rb").read() == data(size)
 
 
 def read_bytes(enc):
@@ -128,3 +128,21 @@ def test_empty_file_header_authenticated(tmp_path):
     write_bytes(enc, payload)
     with pytest.raises(Exception):
         decrypt(enc, PASSWORD, overwrite=True)
+
+
+def test_encrypt_refuses_existing_output(tmp_path):
+    encrypt_to(tmp_path, 100)
+    with pytest.raises(FileExistsError):
+        encrypt(str(tmp_path / "in.bin"), PASSWORD)
+
+
+def test_encrypt_overwrites_with_flag(tmp_path):
+    encrypt_to(tmp_path, 100)
+    encrypt(str(tmp_path / "in.bin"), PASSWORD, overwrite=True)
+
+
+def test_decrypt_refuses_existing_output(tmp_path):
+    enc = encrypt_to(tmp_path, 100)
+    decrypt(enc, PASSWORD, overwrite=True)
+    with pytest.raises(FileExistsError):
+        decrypt(enc, PASSWORD)

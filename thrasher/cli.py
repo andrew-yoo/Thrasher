@@ -8,15 +8,11 @@ from .main import encrypt, decrypt
 def main():
     parser = argparse.ArgumentParser(description="Thrasher")
     parser.add_argument("file", help="file to encrypt or decrypt")
-    parser.add_argument("-w", "--overwrite", action="store_true", help="overwrite the input file on decryption")
+    parser.add_argument("-w", "--overwrite", action="store_true", help="allow overwriting an existing file")
     args = parser.parse_args()
 
     try:
         if not args.file.endswith(".thrash"):
-            if args.overwrite:
-                print("-w/--overwrite is only supported when decrypting", file=sys.stderr)
-                sys.exit(1)
-
             password = getpass.getpass("Password: ").encode()
 
             if not password:
@@ -28,7 +24,7 @@ def main():
                 print("Passwords do not match", file=sys.stderr)
                 sys.exit(1)
 
-            encrypt(args.file, password)
+            encrypt(args.file, password, args.overwrite)
 
         else:
             password = getpass.getpass("Password: ").encode()

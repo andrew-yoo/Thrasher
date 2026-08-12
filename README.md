@@ -19,10 +19,7 @@ pip install thrasher
 # Encrypt a file
 thrasher secret.txt
 
-# Decrypt a file
-thrasher secret.txt.thrash
-
-# Overwrite on decryption
+# Decrypt a file (-w is required to overwrite existing files)
 thrasher -w secret.txt.thrash
 
 # Help
