@@ -50,6 +50,8 @@ class atomic_write:
                     except FileExistsError:
                         raise
                     except OSError:
+                        if os.path.exists(self.path):
+                            raise FileExistsError(f"{self.path} already exists") from None
                         os.replace(self.tmp_path, self.path)
                     else:
                         os.unlink(self.tmp_path)
