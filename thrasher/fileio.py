@@ -62,12 +62,11 @@ class atomic_write:
                 if self.overwrite:
                     os.replace(self.created, self.path)
                 elif all(self.created_id):
-                    try:
-                        st = os.lstat(self.path)
-                    except FileNotFoundError:
+                    same = self._same_file(self.path)
+                    if same is False:
                         raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
-                    if (st.st_dev, st.st_ino) != self.created_id:
-                        raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
+                    if same is None:
+                        raise FileExistsError(f"{self.path} was removed while writing; retry the operation")
                 self.committed = True
                 self._fsync_dir()
             else:
@@ -82,16 +81,19 @@ class atomic_write:
                 try:
                     if self.created_id is None:
                         os.unlink(self.created)
-                    elif all(self.created_id):
-                        st = os.lstat(self.created)
-                        if (st.st_dev, st.st_ino) == self.created_id:
-                            os.unlink(self.created)
-                    # else: identity is unverifiable (st_dev/st_ino == 0 on Windows
-                    # FAT/exFAT/WebDAV); refuse rather than unlink a file we can't
-                    # prove we own. A failed write leaves a partial file; recovery is -w.
+                    elif all(self.created_id) and self._same_file(self.created):
+                        os.unlink(self.created)
                 except OSError:
                     pass  # never mask the original error
         return False
+
+    def _same_file(self, path):
+        """True if path is still the file created here, False if replaced, None if gone."""
+        try:
+            st = os.lstat(path)
+        except FileNotFoundError:
+            return None
+        return (st.st_dev, st.st_ino) == self.created_id
 
     def _fsync_dir(self):
         if sys.platform == "win32":
