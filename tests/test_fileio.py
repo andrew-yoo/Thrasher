@@ -63,6 +63,31 @@ def test_atomic_write_no_overwrite_commits_when_absent(tmp_path):
     assert open(target, "rb").read() == b"data"
 
 
+def test_atomic_write_no_overwrite_falls_back_without_hardlinks(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def no_links(src, dst):
+        raise OSError(errno.EPERM, "Operation not permitted")
+
+    monkeypatch.setattr("thrasher.fileio.os.link", no_links)
+    with atomic_write(target, overwrite=False) as f:
+        f.write(b"data")
+    assert open(target, "rb").read() == b"data"
+
+
+def test_atomic_write_no_overwrite_propagates_existing(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def existing(src, dst):
+        raise FileExistsError(17, "File exists")
+
+    monkeypatch.setattr("thrasher.fileio.os.link", existing)
+    with pytest.raises(FileExistsError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"data")
+    assert not os.path.exists(target)
+
+
 def test_atomic_write_closes_file_on_fsync_failure(tmp_path, monkeypatch):
     target = str(tmp_path / "out.bin")
 

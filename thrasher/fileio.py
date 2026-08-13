@@ -45,8 +45,14 @@ class atomic_write:
                 if self.overwrite:
                     os.replace(self.tmp_path, self.path)
                 else:
-                    os.link(self.tmp_path, self.path)
-                    os.unlink(self.tmp_path)
+                    try:
+                        os.link(self.tmp_path, self.path)
+                    except FileExistsError:
+                        raise
+                    except OSError:
+                        os.replace(self.tmp_path, self.path)
+                    else:
+                        os.unlink(self.tmp_path)
                 self._fsync_dir()
             else:
                 self.file.close()
