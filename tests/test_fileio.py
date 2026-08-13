@@ -52,7 +52,8 @@ def test_atomic_write_no_overwrite_refuses_existing(tmp_path):
     with pytest.raises(FileExistsError):
         with atomic_write(target, overwrite=False) as f:
             f.write(b"replacement")
-    assert open(target, "rb").read() == b"original"
+    with open(target, "rb") as f:
+        assert f.read() == b"original"
     assert [p for p in os.listdir(tmp_path) if p.startswith(".thrasher-")] == []
 
 
@@ -60,7 +61,8 @@ def test_atomic_write_no_overwrite_commits_when_absent(tmp_path):
     target = str(tmp_path / "out.bin")
     with atomic_write(target, overwrite=False) as f:
         f.write(b"data")
-    assert open(target, "rb").read() == b"data"
+    with open(target, "rb") as f:
+        assert f.read() == b"data"
 
 
 def test_atomic_write_no_overwrite_cleans_on_error(tmp_path):
@@ -100,6 +102,42 @@ def test_atomic_write_no_overwrite_keeps_replaced_file(tmp_path, monkeypatch):
     assert os.path.exists(target)
 
 
+def test_atomic_write_no_overwrite_commit_rejects_replaced_file(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+    other = tmp_path / "other.bin"
+    other.write_bytes(b"other")
+    real_lstat = os.lstat
+
+    def foreign_lstat(path):
+        return real_lstat(str(other))
+
+    monkeypatch.setattr("thrasher.fileio.os.lstat", foreign_lstat)
+    with pytest.raises(FileExistsError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"data")
+    assert os.path.exists(target)
+
+
+def test_atomic_write_no_overwrite_cleanup_after_cwd_change(tmp_path, monkeypatch):
+    target = tmp_path / "out.bin"
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(RuntimeError):
+        with atomic_write("out.bin", overwrite=False) as f:
+            f.write(b"partial")
+            monkeypatch.chdir(tmp_path.parent)
+            raise RuntimeError("boom")
+    assert not os.path.exists(target)
+
+
+def test_atomic_write_commit_after_cwd_change(tmp_path, monkeypatch):
+    target = tmp_path / "out.bin"
+    monkeypatch.chdir(tmp_path)
+    with atomic_write("out.bin") as f:
+        f.write(b"data")
+        monkeypatch.chdir(tmp_path.parent)
+    assert os.path.exists(target)
+
+
 def test_atomic_write_no_overwrite_refuses_symlink(tmp_path):
     target = tmp_path / "out.bin"
     link = tmp_path / "alink"
@@ -136,6 +174,7 @@ def test_fsync_dir_propagates_open_error(tmp_path, monkeypatch):
     monkeypatch.setattr("thrasher.fileio.os.open", fail_open)
     with pytest.raises(OSError) as e:
         aw._fsync_dir()
+    aw.file.close()
     assert e.value.errno == errno.EACCES
 
 
@@ -147,6 +186,7 @@ def test_fsync_dir_ignores_unsupported(tmp_path, monkeypatch):
 
     monkeypatch.setattr("thrasher.fileio.os.fsync", unsupported)
     aw._fsync_dir()  # must not raise
+    aw.file.close()
 
 
 def test_fsync_dir_propagates_real_error(tmp_path, monkeypatch):
@@ -158,6 +198,7 @@ def test_fsync_dir_propagates_real_error(tmp_path, monkeypatch):
     monkeypatch.setattr("thrasher.fileio.os.fsync", io_error)
     with pytest.raises(OSError) as e:
         aw._fsync_dir()
+    aw.file.close()
     assert e.value.errno == errno.EIO
 
 
