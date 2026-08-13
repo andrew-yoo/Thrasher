@@ -151,6 +151,54 @@ def test_atomic_write_commit_after_cwd_change(tmp_path, monkeypatch):
     assert os.path.exists(target)
 
 
+def test_atomic_write_cleans_created_file_on_init_failure(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def fail_fdopen(fd, mode):
+        raise OSError("fdopen failed")
+
+    monkeypatch.setattr("thrasher.fileio.os.fdopen", fail_fdopen)
+    with pytest.raises(OSError):
+        atomic_write(target, overwrite=False)
+    assert not os.path.exists(target)
+
+
+def test_atomic_write_cleans_temp_on_init_failure(tmp_path, monkeypatch):
+    def fail_fdopen(fd, mode):
+        raise OSError("fdopen failed")
+
+    monkeypatch.setattr("thrasher.fileio.os.fdopen", fail_fdopen)
+    with pytest.raises(OSError):
+        atomic_write(str(tmp_path / "out.bin"))
+    assert [p for p in os.listdir(tmp_path) if p.startswith(".thrasher-")] == []
+
+
+def test_atomic_write_no_overwrite_cleans_on_fsync_dir_failure(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def fail_fsync_dir(self):
+        raise OSError("dir fsync failed")
+
+    monkeypatch.setattr("thrasher.fileio.atomic_write._fsync_dir", fail_fsync_dir)
+    with pytest.raises(OSError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"data")
+    assert not os.path.exists(target)
+
+
+def test_atomic_write_commits_on_fsync_dir_failure(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def fail_fsync_dir(self):
+        raise OSError("dir fsync failed")
+
+    monkeypatch.setattr("thrasher.fileio.atomic_write._fsync_dir", fail_fsync_dir)
+    with pytest.raises(OSError):
+        with atomic_write(target) as f:
+            f.write(b"data")
+    assert os.path.exists(target)
+
+
 def test_atomic_write_no_overwrite_refuses_symlink(tmp_path):
     target = tmp_path / "out.bin"
     link = tmp_path / "alink"

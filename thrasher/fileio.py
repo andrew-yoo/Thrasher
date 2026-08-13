@@ -46,9 +46,18 @@ class atomic_write:
             # failed write leaves a partial file that must be removed or overwritten.
             fd = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
             self.created = self.path
-            st = os.fstat(fd)
-            self.created_id = (st.st_dev, st.st_ino)
-        self.file = os.fdopen(fd, "wb")
+        try:
+            if not overwrite:
+                st = os.fstat(fd)
+                self.created_id = (st.st_dev, st.st_ino)
+            self.file = os.fdopen(fd, "wb")
+        except Exception:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+            self._cleanup()
+            raise
 
     def __enter__(self):
         return self.file
@@ -67,8 +76,8 @@ class atomic_write:
                         raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
                     if same is None:
                         raise FileExistsError(f"{self.path} was removed while writing; retry the operation")
-                self.committed = True
                 self._fsync_dir()
+                self.committed = True
             else:
                 self.file.close()
         finally:
@@ -78,14 +87,17 @@ class atomic_write:
                 except OSError:
                     pass  # never mask the original error
             if not self.committed:
-                try:
-                    if self.created_id is None:
-                        os.unlink(self.created)
-                    elif all(self.created_id) and self._same_file(self.created):
-                        os.unlink(self.created)
-                except OSError:
-                    pass  # never mask the original error
+                self._cleanup()
         return False
+
+    def _cleanup(self):
+        try:
+            if self.created_id is None:
+                os.unlink(self.created)
+            elif all(self.created_id) and self._same_file(self.created):
+                os.unlink(self.created)
+        except OSError:
+            pass  # never mask the original error
 
     def _same_file(self, path):
         """True if path is still the file created here, False if replaced, None if gone."""
