@@ -70,12 +70,12 @@ class atomic_write:
                 self.file.close()
                 if self.overwrite:
                     os.replace(self.created, self.path)
-                elif all(self.created_id):
+                else:
                     same = self._same_file(self.path)
-                    if same is False:
-                        raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
                     if same is None:
                         raise FileExistsError(f"{self.path} was removed while writing; retry the operation")
+                    if all(self.created_id) and same is False:
+                        raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
                 self._fsync_dir()
                 self.committed = True
             else:

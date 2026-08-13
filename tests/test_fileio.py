@@ -50,8 +50,7 @@ def test_atomic_write_no_overwrite_refuses_existing(tmp_path):
     with open(target, "wb") as f:
         f.write(b"original")
     with pytest.raises(FileExistsError):
-        with atomic_write(target, overwrite=False) as f:
-            f.write(b"replacement")
+        atomic_write(target, overwrite=False)
     with open(target, "rb") as f:
         assert f.read() == b"original"
     assert [p for p in os.listdir(tmp_path) if p.startswith(".thrasher-")] == []
@@ -120,6 +119,21 @@ def test_atomic_write_no_overwrite_commit_rejects_replaced_file(tmp_path, monkey
 
 def test_atomic_write_no_overwrite_commit_rejects_removed_file(tmp_path, monkeypatch):
     target = str(tmp_path / "out.bin")
+
+    def missing_lstat(path):
+        raise FileNotFoundError
+
+    monkeypatch.setattr("thrasher.fileio.os.lstat", missing_lstat)
+    with pytest.raises(FileExistsError, match="was removed while writing"):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"data")
+    assert os.path.exists(target)
+
+
+def test_atomic_write_no_overwrite_unverifiable_identity_removed(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+    zero_stat = os.stat_result((0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    monkeypatch.setattr("thrasher.fileio.os.fstat", lambda fd: zero_stat)
 
     def missing_lstat(path):
         raise FileNotFoundError
@@ -205,8 +219,7 @@ def test_atomic_write_no_overwrite_refuses_symlink(tmp_path):
     target.write_bytes(b"existing")
     os.symlink(target, link)
     with pytest.raises(FileExistsError):
-        with atomic_write(str(link), overwrite=False) as f:
-            f.write(b"data")
+        atomic_write(str(link), overwrite=False)
     assert os.path.islink(link)
 
 
