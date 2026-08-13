@@ -118,6 +118,19 @@ def test_atomic_write_no_overwrite_commit_rejects_replaced_file(tmp_path, monkey
     assert os.path.exists(target)
 
 
+def test_atomic_write_no_overwrite_commit_rejects_removed_file(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+
+    def missing_lstat(path):
+        raise FileNotFoundError
+
+    monkeypatch.setattr("thrasher.fileio.os.lstat", missing_lstat)
+    with pytest.raises(FileExistsError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"data")
+    assert os.path.exists(target)
+
+
 def test_atomic_write_no_overwrite_cleanup_after_cwd_change(tmp_path, monkeypatch):
     target = tmp_path / "out.bin"
     monkeypatch.chdir(tmp_path)

@@ -62,7 +62,10 @@ class atomic_write:
                 if self.overwrite:
                     os.replace(self.created, self.path)
                 elif all(self.created_id):
-                    st = os.lstat(self.path)
+                    try:
+                        st = os.lstat(self.path)
+                    except FileNotFoundError:
+                        raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
                     if (st.st_dev, st.st_ino) != self.created_id:
                         raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
                 self.committed = True
