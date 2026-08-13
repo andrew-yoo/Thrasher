@@ -36,8 +36,12 @@ class atomic_write:
         if overwrite:
             fd, self.created = tempfile.mkstemp(prefix=".thrasher-", dir=self.directory)
         else:
-            # File is written in place, and non-atomic, but never destroys pre-existing data.
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            # Create-if-absent is atomic on every filesystem (no hard links needed),
+            # but the file is written in place: a crash can leave a partial file at
+            # a path that was previously absent, and readers may see partial output.
+            # Never destroys pre-existing data, since creation is exclusive. After
+            # such a crash the leftover file must be removed or overwritten with -w.
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
             self.created = path
             st = os.fstat(fd)
             self.created_id = (st.st_dev, st.st_ino)

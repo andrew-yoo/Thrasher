@@ -43,7 +43,7 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
         raise ValueError("Wrong extension")
 
     out_path = path.removesuffix(".thrash")
-    if not out_path:
+    if not os.path.basename(out_path):
         raise ValueError("Invalid filename")
 
     file_size = os.path.getsize(path)

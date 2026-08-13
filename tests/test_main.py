@@ -121,11 +121,14 @@ def test_wrong_extension(tmp_path):
         decrypt(str(f), PASSWORD)
 
 
-def test_empty_stem(tmp_path, monkeypatch):
+@pytest.mark.parametrize("name", [".thrash", "./.thrash", "sub/.thrash"])
+def test_empty_stem(tmp_path, monkeypatch, name):
     monkeypatch.chdir(tmp_path)
-    open(".thrash", "wb").close()
+    sub = tmp_path / "sub"
+    sub.mkdir(exist_ok=True)
+    open(name, "wb").close()
     with pytest.raises(ValueError, match="Invalid filename"):
-        decrypt(".thrash", PASSWORD)
+        decrypt(name, PASSWORD)
 
 
 def test_empty_file_header_authenticated(tmp_path):
