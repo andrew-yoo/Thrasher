@@ -217,7 +217,10 @@ def test_atomic_write_no_overwrite_refuses_symlink(tmp_path):
     target = tmp_path / "out.bin"
     link = tmp_path / "alink"
     target.write_bytes(b"existing")
-    os.symlink(target, link)
+    try:
+        os.symlink(target, link)
+    except OSError:
+        pytest.skip("symlinks not supported on this platform")
     with pytest.raises(FileExistsError):
         atomic_write(str(link), overwrite=False)
     assert os.path.islink(link)
