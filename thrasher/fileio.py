@@ -41,8 +41,9 @@ class atomic_write:
             # a path that was previously absent, and readers may see partial output.
             # Never destroys pre-existing data, since creation is exclusive. After
             # such a crash the leftover file must be removed or overwritten with -w.
-            # On Windows, st_dev/st_ino are only meaningful on NTFS
-            # on filesystems without file-reference numbers, report 0.
+            # On Windows, st_dev/st_ino are only meaningful on NTFS; filesystems
+            # without file-reference numbers (FAT/exFAT/WebDAV) report 0, so a
+            # failed write leaves a partial file that must be removed or overwritten.
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
             self.created = path
             st = os.fstat(fd)
@@ -78,8 +79,9 @@ class atomic_write:
                         st = os.lstat(self.created)
                         if (st.st_dev, st.st_ino) == self.created_id:
                             os.unlink(self.created)
-                    # else: identity is unverifiable there (st_dev/st_ino == 0),
-                    # so refuse rather than unlink a file we can't prove we own
+                    # else: identity is unverifiable (st_dev/st_ino == 0 on Windows
+                    # FAT/exFAT/WebDAV); refuse rather than unlink a file we can't
+                    # prove we own. A failed write leaves a partial file; recovery is -w.
                 except OSError:
                     pass  # never mask the original error
         return False
