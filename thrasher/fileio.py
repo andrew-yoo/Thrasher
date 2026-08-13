@@ -31,12 +31,16 @@ class atomic_write:
         self.overwrite = overwrite
         self.directory = os.path.dirname(os.path.abspath(path))
         self.created = None
+        self.created_id = None
         self.committed = False
         if overwrite:
             fd, self.created = tempfile.mkstemp(prefix=".thrasher-", dir=self.directory)
         else:
+            # File is written in place, and non-atomic, but never destroys pre-existing data.
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             self.created = path
+            st = os.fstat(fd)
+            self.created_id = (st.st_dev, st.st_ino)
         self.file = os.fdopen(fd, "wb")
 
     def __enter__(self):
@@ -62,7 +66,10 @@ class atomic_write:
                     pass  # never mask the original error
             if not self.committed:
                 try:
-                    os.unlink(self.created)
+                    if self.created_id is None:
+                        os.unlink(self.created)
+                    elif (os.lstat(self.created).st_dev, os.lstat(self.created).st_ino) == self.created_id:
+                        os.unlink(self.created)
                 except OSError:
                     pass  # never mask the original error
         return False

@@ -16,11 +16,11 @@ def _record_count(length: int) -> int:
 
 
 def encrypt(path: str, password: bytes, overwrite: bool = False) -> None:
+    plaintext_size = os.path.getsize(path)
     out_path = path + ".thrash"
     if os.path.lexists(out_path) and not overwrite:
         raise FileExistsError(f"{out_path} already exists; use -w/--overwrite to overwrite")
 
-    plaintext_size = os.path.getsize(path)
     salt = os.urandom(Header.SALT_SIZE)
 
     key = derive_key(KDF(salt=salt, password=password))
@@ -46,10 +46,11 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
     if not out_path:
         raise ValueError("Invalid filename")
 
+    file_size = os.path.getsize(path)
+
     if os.path.lexists(out_path) and not overwrite:
         raise FileExistsError(f"{out_path} already exists; use -w/--overwrite to overwrite")
 
-    file_size = os.path.getsize(path)
     with open(path, "rb") as f:
         header_bytes = read_exact(f, Header.SIZE)
         header = Header.from_bytes(header_bytes)

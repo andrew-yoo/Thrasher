@@ -72,6 +72,23 @@ def test_atomic_write_no_overwrite_cleans_on_error(tmp_path):
     assert not os.path.exists(target)
 
 
+def test_atomic_write_no_overwrite_keeps_replaced_file(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+    other = tmp_path / "other.bin"
+    other.write_bytes(b"other")
+    real_lstat = os.lstat
+
+    def foreign_lstat(path):
+        return real_lstat(str(other))
+
+    monkeypatch.setattr("thrasher.fileio.os.lstat", foreign_lstat)
+    with pytest.raises(RuntimeError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"partial")
+            raise RuntimeError("boom")
+    assert os.path.exists(target)
+
+
 def test_atomic_write_no_overwrite_refuses_symlink(tmp_path):
     target = tmp_path / "out.bin"
     link = tmp_path / "alink"
