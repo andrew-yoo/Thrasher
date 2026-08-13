@@ -68,8 +68,10 @@ class atomic_write:
                 try:
                     if self.created_id is None:
                         os.unlink(self.created)
-                    elif (os.lstat(self.created).st_dev, os.lstat(self.created).st_ino) == self.created_id:
-                        os.unlink(self.created)
+                    else:
+                        st = os.lstat(self.created)
+                        if (st.st_dev, st.st_ino) == self.created_id:
+                            os.unlink(self.created)
                 except OSError:
                     pass  # never mask the original error
         return False
