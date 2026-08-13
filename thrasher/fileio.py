@@ -30,7 +30,13 @@ class atomic_write:
         self.path = path
         self.overwrite = overwrite
         self.directory = os.path.dirname(os.path.abspath(path))
-        fd, self.tmp_path = tempfile.mkstemp(prefix=".thrasher-", dir=self.directory)
+        self.created = None
+        self.committed = False
+        if overwrite:
+            fd, self.created = tempfile.mkstemp(prefix=".thrasher-", dir=self.directory)
+        else:
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            self.created = path
         self.file = os.fdopen(fd, "wb")
 
     def __enter__(self):
@@ -43,18 +49,8 @@ class atomic_write:
                 os.fsync(self.file.fileno())
                 self.file.close()
                 if self.overwrite:
-                    os.replace(self.tmp_path, self.path)
-                else:
-                    try:
-                        os.link(self.tmp_path, self.path)
-                    except FileExistsError:
-                        raise
-                    except OSError:
-                        if os.path.exists(self.path):
-                            raise FileExistsError(f"{self.path} already exists") from None
-                        os.replace(self.tmp_path, self.path)
-                    else:
-                        os.unlink(self.tmp_path)
+                    os.replace(self.created, self.path)
+                self.committed = True
                 self._fsync_dir()
             else:
                 self.file.close()
@@ -64,9 +60,9 @@ class atomic_write:
                     self.file.close()
                 except OSError:
                     pass  # never mask the original error
-            if os.path.exists(self.tmp_path):
+            if not self.committed:
                 try:
-                    os.unlink(self.tmp_path)
+                    os.unlink(self.created)
                 except OSError:
                     pass  # never mask the original error
         return False

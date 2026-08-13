@@ -5,6 +5,14 @@ import sys
 from .main import encrypt, decrypt
 
 
+def _get_password():
+    password = getpass.getpass("Password: ").encode()
+    if not password:
+        print("Password field cannot be empty", file=sys.stderr)
+        return None
+    return password
+
+
 def main():
     parser = argparse.ArgumentParser(description="Thrasher")
     parser.add_argument("file", help="file to encrypt or decrypt")
@@ -13,24 +21,19 @@ def main():
 
     try:
         if not args.file.endswith(".thrash"):
-            password = getpass.getpass("Password: ").encode()
-
-            if not password:
-                print("Password field cannot be empty", file=sys.stderr)
+            password = _get_password()
+            if password is None:
                 sys.exit(1)
 
-            password2 = getpass.getpass("Confirm: ").encode()
-            if password != password2:
+            if getpass.getpass("Confirm: ").encode() != password:
                 print("Passwords do not match", file=sys.stderr)
                 sys.exit(1)
 
             encrypt(args.file, password, args.overwrite)
 
         else:
-            password = getpass.getpass("Password: ").encode()
-
-            if not password:
-                print("Password field cannot be empty", file=sys.stderr)
+            password = _get_password()
+            if password is None:
                 sys.exit(1)
 
             decrypt(args.file, password, args.overwrite)
