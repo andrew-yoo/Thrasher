@@ -88,6 +88,22 @@ def test_atomic_write_no_overwrite_propagates_existing(tmp_path, monkeypatch):
     assert not os.path.exists(target)
 
 
+def test_atomic_write_no_overwrite_fallback_refuses_existing(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+    with open(target, "wb") as f:
+        f.write(b"original")
+
+    def no_links(src, dst):
+        raise OSError(errno.EPERM, "Operation not permitted")
+
+    monkeypatch.setattr("thrasher.fileio.os.link", no_links)
+    with pytest.raises(FileExistsError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"replacement")
+    assert open(target, "rb").read() == b"original"
+    assert [p for p in os.listdir(tmp_path) if p.startswith(".thrasher-")] == []
+
+
 def test_atomic_write_closes_file_on_fsync_failure(tmp_path, monkeypatch):
     target = str(tmp_path / "out.bin")
 
