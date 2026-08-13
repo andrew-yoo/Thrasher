@@ -72,6 +72,17 @@ def test_atomic_write_no_overwrite_cleans_on_error(tmp_path):
     assert not os.path.exists(target)
 
 
+def test_atomic_write_no_overwrite_unverifiable_identity(tmp_path, monkeypatch):
+    target = str(tmp_path / "out.bin")
+    zero_stat = os.stat_result((0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    monkeypatch.setattr("thrasher.fileio.os.fstat", lambda fd: zero_stat)
+    with pytest.raises(RuntimeError):
+        with atomic_write(target, overwrite=False) as f:
+            f.write(b"partial")
+            raise RuntimeError("boom")
+    assert os.path.exists(target)
+
+
 def test_atomic_write_no_overwrite_keeps_replaced_file(tmp_path, monkeypatch):
     target = str(tmp_path / "out.bin")
     other = tmp_path / "other.bin"
