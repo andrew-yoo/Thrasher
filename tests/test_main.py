@@ -121,6 +121,13 @@ def test_wrong_extension(tmp_path):
         decrypt(str(f), PASSWORD)
 
 
+def test_empty_stem(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    open(".thrash", "wb").close()
+    with pytest.raises(ValueError, match="Invalid filename"):
+        decrypt(".thrash", PASSWORD)
+
+
 def test_empty_file_header_authenticated(tmp_path):
     enc = encrypt_to(tmp_path, 0)
     assert len(read_bytes(enc)) == Header.SIZE + 32

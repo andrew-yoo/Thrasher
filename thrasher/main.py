@@ -41,6 +41,10 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
     if not path.endswith(".thrash"):
         raise ValueError("Wrong extension")
 
+    out_path = path.removesuffix(".thrash")
+    if not out_path:
+        raise ValueError("Invalid filename")
+
     file_size = os.path.getsize(path)
     with open(path, "rb") as f:
         header_bytes = read_exact(f, Header.SIZE)
@@ -52,8 +56,7 @@ def decrypt(path: str, password: bytes, overwrite: bool = False) -> None:
 
         key = derive_key(KDF(salt=header.salt, password=password))
 
-        out_path = path.removesuffix(".thrash")
-        if not out_path or (os.path.exists(out_path) and not overwrite):
+        if os.path.exists(out_path) and not overwrite:
             raise FileExistsError(f"{out_path} already exists; use -w/--overwrite to overwrite")
         with atomic_write(out_path, overwrite=overwrite) as out:
             recovered = 0
