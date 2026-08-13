@@ -112,7 +112,7 @@ def test_atomic_write_no_overwrite_commit_rejects_replaced_file(tmp_path, monkey
         return real_lstat(str(other))
 
     monkeypatch.setattr("thrasher.fileio.os.lstat", foreign_lstat)
-    with pytest.raises(FileExistsError):
+    with pytest.raises(FileExistsError, match="was replaced while writing"):
         with atomic_write(target, overwrite=False) as f:
             f.write(b"data")
     assert os.path.exists(target)
@@ -125,7 +125,7 @@ def test_atomic_write_no_overwrite_commit_rejects_removed_file(tmp_path, monkeyp
         raise FileNotFoundError
 
     monkeypatch.setattr("thrasher.fileio.os.lstat", missing_lstat)
-    with pytest.raises(FileExistsError):
+    with pytest.raises(FileExistsError, match="was removed while writing"):
         with atomic_write(target, overwrite=False) as f:
             f.write(b"data")
     assert os.path.exists(target)
