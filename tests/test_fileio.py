@@ -252,6 +252,7 @@ def test_fsync_dir_propagates_open_error(tmp_path, monkeypatch):
     with pytest.raises(OSError) as e:
         aw._fsync_dir()
     aw.file.close()
+    os.unlink(aw.created)
     assert e.value.errno == errno.EACCES
 
 
@@ -264,6 +265,7 @@ def test_fsync_dir_ignores_unsupported(tmp_path, monkeypatch):
     monkeypatch.setattr("thrasher.fileio.os.fsync", unsupported)
     aw._fsync_dir()  # must not raise
     aw.file.close()
+    os.unlink(aw.created)
 
 
 def test_fsync_dir_propagates_real_error(tmp_path, monkeypatch):
@@ -276,6 +278,7 @@ def test_fsync_dir_propagates_real_error(tmp_path, monkeypatch):
     with pytest.raises(OSError) as e:
         aw._fsync_dir()
     aw.file.close()
+    os.unlink(aw.created)
     assert e.value.errno == errno.EIO
 
 
