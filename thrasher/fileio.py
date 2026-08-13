@@ -27,9 +27,9 @@ def read_exact(f, size: int) -> bytes:
 
 class atomic_write:
     def __init__(self, path: str, overwrite: bool = True) -> None:
-        self.path = path
+        self.path = os.path.abspath(path)
         self.overwrite = overwrite
-        self.directory = os.path.dirname(os.path.abspath(path))
+        self.directory = os.path.dirname(self.path)
         self.created = None
         self.created_id = None
         self.committed = False
@@ -44,8 +44,8 @@ class atomic_write:
             # On Windows, st_dev/st_ino are only meaningful on NTFS; filesystems
             # without file-reference numbers (FAT/exFAT/WebDAV) report 0, so a
             # failed write leaves a partial file that must be removed or overwritten.
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
-            self.created = path
+            fd = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
+            self.created = self.path
             st = os.fstat(fd)
             self.created_id = (st.st_dev, st.st_ino)
         self.file = os.fdopen(fd, "wb")
@@ -61,6 +61,10 @@ class atomic_write:
                 self.file.close()
                 if self.overwrite:
                     os.replace(self.created, self.path)
+                elif all(self.created_id):
+                    st = os.lstat(self.path)
+                    if (st.st_dev, st.st_ino) != self.created_id:
+                        raise FileExistsError(f"{self.path} was replaced while writing; use -w/--overwrite to overwrite")
                 self.committed = True
                 self._fsync_dir()
             else:
