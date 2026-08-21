@@ -92,9 +92,7 @@ class atomic_write:
 
     def _cleanup(self):
         try:
-            if self.created_id is None:
-                os.unlink(self.created)
-            elif all(self.created_id) and self._same_file(self.created):
+            if self.created_id is None or (all(self.created_id) and self._same_file(self.created)):
                 os.unlink(self.created)
         except OSError:
             pass  # never mask the original error
